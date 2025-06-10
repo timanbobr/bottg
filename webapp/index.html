@@ -66,8 +66,14 @@
 
     <script>
         // Инициализация Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+        let tg;
+        try {
+            tg = window.Telegram.WebApp;
+            tg.expand();
+            tg.enableClosingConfirmation();
+        } catch (error) {
+            console.error('Telegram WebApp initialization error:', error);
+        }
 
         // Определение платформы
         function detectPlatform() {
@@ -150,17 +156,25 @@
                 };
                 
                 console.log('Sending export command...');
-                await tg.sendData(JSON.stringify(data));
-                console.log('Export command sent successfully');
                 
-                // Показываем инструкции
-                loading.style.display = 'none';
-                showInstructions(platform);
-                
-                // Закрываем веб-приложение через 30 секунд
-                setTimeout(() => {
-                    tg.close();
-                }, 30000);
+                // Проверяем, что tg инициализирован
+                if (tg && tg.sendData) {
+                    await tg.sendData(JSON.stringify(data));
+                    console.log('Export command sent successfully');
+                    
+                    // Показываем инструкции
+                    loading.style.display = 'none';
+                    showInstructions(platform);
+                    
+                    // Закрываем веб-приложение через 30 секунд
+                    setTimeout(() => {
+                        if (tg && tg.close) {
+                            tg.close();
+                        }
+                    }, 30000);
+                } else {
+                    throw new Error('Telegram WebApp not initialized');
+                }
                 
             } catch (error) {
                 console.error('Auth error:', error);
@@ -169,6 +183,17 @@
                 button.style.display = 'block';
                 button.textContent = 'Попробовать снова';
             }
+        }
+
+        // Проверяем, что мы в Telegram WebApp
+        if (window.Telegram && window.Telegram.WebApp) {
+            console.log('Running in Telegram WebApp');
+        } else {
+            console.log('Running in browser');
+            document.getElementById('authButton').textContent = 'Открыть в Telegram';
+            document.getElementById('authButton').onclick = function() {
+                window.location.href = 'https://t.me/your_bot_username?start=webapp';
+            };
         }
     </script>
 </body>
