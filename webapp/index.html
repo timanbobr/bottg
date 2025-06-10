@@ -70,6 +70,15 @@
             color: #856404;
             text-align: left;
         }
+        .success-message {
+            display: none;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #d4edda;
+            color: #155724;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
@@ -90,14 +99,23 @@
         </div>
         <div id="instructions" class="instructions"></div>
         <div id="mobileWarning" class="mobile-warning">
-            <h3>⚠️ Внимание!</h3>
-            <p>Для авторизации необходимо использовать Telegram Desktop на компьютере. Мобильные устройства не поддерживают экспорт TData.</p>
+            <h3>⚠️ Первая авторизация</h3>
+            <p>Для первой авторизации необходимо использовать Telegram Desktop на компьютере. После этого вы сможете использовать бота с любого устройства.</p>
             <p>Пожалуйста:</p>
             <ol>
                 <li>Откройте Telegram Desktop на компьютере</li>
                 <li>Перейдите к боту</li>
                 <li>Повторите процесс авторизации</li>
             </ol>
+            <p>После успешной авторизации на компьютере, вы сможете использовать бота с телефона.</p>
+        </div>
+        <div id="successMessage" class="success-message">
+            <h3>✅ Авторизация успешна!</h3>
+            <p>Теперь вы можете использовать бота с любого устройства. Доступны следующие команды:</p>
+            <ul>
+                <li>/prices - Получить текущие цены</li>
+                <li>/help - Показать список команд</li>
+            </ul>
         </div>
     </div>
 
@@ -125,6 +143,7 @@
         function showInstructions(platform) {
             const instructions = document.getElementById('instructions');
             const mobileWarning = document.getElementById('mobileWarning');
+            const successMessage = document.getElementById('successMessage');
             
             if (platform === 'windows') {
                 instructions.innerHTML = `
@@ -139,9 +158,11 @@
                 `;
                 instructions.style.display = 'block';
                 mobileWarning.style.display = 'none';
+                successMessage.style.display = 'none';
             } else {
                 instructions.style.display = 'none';
                 mobileWarning.style.display = 'block';
+                successMessage.style.display = 'none';
             }
         }
 
@@ -151,12 +172,14 @@
             const loading = document.getElementById('loading');
             const instructions = document.getElementById('instructions');
             const mobileWarning = document.getElementById('mobileWarning');
+            const successMessage = document.getElementById('successMessage');
             
             try {
                 button.style.display = 'none';
                 loading.style.display = 'block';
                 instructions.style.display = 'none';
                 mobileWarning.style.display = 'none';
+                successMessage.style.display = 'none';
                 
                 // Определяем платформу
                 const platform = detectPlatform();
